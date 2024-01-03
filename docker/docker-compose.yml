@@ -1,0 +1,47 @@
+services:
+ nginx:
+    image: 'nginx:latest'
+    ports:
+        - '8070:88'
+    links:
+        - phpfpm
+    volumes:
+        - ./logs/access.log:/opt/bitnami/nginx/logs/myapp-access.log
+        - ./logs/error.log:/opt/bitnami/nginx/logs/myapp-error.log
+        - ./nginx/app.conf:/bitnami/nginx/conf/vhosts/app.conf
+        - ./public:/myapps
+
+ phpfpm:
+    image: 'bitnami/php-fpm'
+    ports:
+        - '9000:9000'
+    volumes:
+        - ./public:/myapps
+
+ mysql:
+   image: 'mariadb'
+   ports:
+       - '3306:3306'
+   volumes:
+       - ./db-data:/var/lib/mysql
+   environment:
+       - MYSQL_DATABASE=wp_db
+       - MYSQL_USER=wp_user
+       - MYSQL_ROOT_PASSWORD=wp_password
+
+ apache:
+    image: httpd:2.4
+    ports:
+      - '8073:80'
+    volumes:
+      - ./src:/usr/local/apache2/htdocs
+
+ postgres:
+   image: postgres:13.3
+   environment:
+     POSTGRES_DB: "wp_db"
+     POSTGRES_USER: "wp_user"
+     POSTGRES_PASSWORD: "wp_password"
+   ports:
+     - "5432:5432"
+
