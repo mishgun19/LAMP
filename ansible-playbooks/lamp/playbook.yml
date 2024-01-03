@@ -1,0 +1,75 @@
+---
+- hosts: localhost
+  become: true
+  vars_files:
+    - vars/default.yml
+
+  tasks:
+    - name: Install prerequisites
+      apt: name={{ item }} update_cache=yes state=latest force_apt_get=yes
+      loop: [ 'aptitude' ]
+
+  #Install LAMP
+    - name: Install LAMP Packages
+      apt: name={{ item }} update_cache=yes state=latest
+      loop: [ 'apache2', 'mysql-server', 'python3-pymysql', 'php', 'php-mysql', 'libapache2-mod-php', 'nginx' ]
+
+    - name: Create document
+      file:
+        path: "/var/www/{{ http_host }}"
+        state: directory
+        owner: "{{ app_user }}"
+        mode: '0755'
+
+  #Apache configuration
+    - name: Set up Apache virtualhost
+      template:
+        src: "files/apache.conf"
+        dest: "/etc/apache2/sites-available/{{ http_conf }}"
+      notify: Reload Apache
+
+    - name: Enable new site
+      shell: /usr/sbin/a2ensite {{ http_conf }}
+      notify: Reload Apache
+
+    - name: Disable default Apache site
+      shell: /usr/sbin/a2dissite 000-default.conf
+      when: disable_default
+      notify: Reload Apache
+
+  # Nginx configuration
+    - name: Set up Nginx virtualhost
+      template:
+        src: "files/nginx.conf"
+        dest: "/etc/nginx/sites-available/{{ http_conf_nginx }}"
+      notify: Reload Nginx
+
+  # MySQL Configuration
+  #  - name: Sets the root password
+  #    mysql_user:
+  #      name: root
+  #      password: "{{ mysql_root_password }}"
+  #      login_unix_socket: /var/run/mysqld/mysqld.sock
+
+  # UFW Configuration
+    - name: "UFW - Allow HTTP on port {{ http_port }}"
+      ufw:
+        rule: allow
+        port: "{{ http_port }}"
+        proto: tcp
+
+  handlers:
+    - name: Reload Apache
+      service:
+        name: apache2
+        state: reloaded
+
+    - name: Restart Apache
+      service:
+        name: apache2
+        state: restarted
+
+    - name: Reload Nginx
+      service:
+        name: nginx
+        state: reload

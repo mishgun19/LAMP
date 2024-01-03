@@ -1,0 +1,9 @@
+---
+mysql_root_password: "1"
+app_user: "lamp"
+http_host: "localhost"
+http_conf: "lamporig.conf"
+http_conf_nginx: "default"
+http_port_nginx: "81"
+http_port: "80"
+disable_default: true
